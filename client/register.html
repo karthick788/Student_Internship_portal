@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | InternHub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+  <div class="card auth-card">
+    <h1>Create Student Account</h1>
+    <p>Register to start discovering internships.</p>
+    <form id="register-form" class="form-grid">
+      <div class="form-group">
+        <label for="full_name">Full Name</label>
+        <input id="full_name" name="full_name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required>
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone (optional)</label>
+        <input id="phone" name="phone" type="tel">
+      </div>
+      <div class="form-group">
+        <label for="college">College (optional)</label>
+        <input id="college" name="college">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required minlength="6">
+      </div>
+      <button class="btn btn-primary" type="submit">Register</button>
+    </form>
+    <p class="auth-footer">Already registered? <a href="login.html">Login</a></p>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    redirectIfAuthed("pages/dashboard.html");
+    document.getElementById("register-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        full_name: form.full_name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        college: form.college.value.trim(),
+        password: form.password.value,
+      };
+      try {
+        const data = await API.apiRequest("/auth/register", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        API.setSession(data.token, data.student);
+        showToast("Account created!", "success");
+        window.location.href = "pages/dashboard.html";
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>

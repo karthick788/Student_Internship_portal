@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Internships | InternHub</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Auth required");
+    mountAppShell(
+      "linkedin",
+      "LinkedIn Internships",
+      `
+      <p style="color:var(--muted);margin-top:0">
+        These listings open official LinkedIn job search pages. InternHub does not scrape LinkedIn.
+      </p>
+      <div id="linkedin-list" class="internship-grid loading-state">Loading...</div>
+      `
+    );
+
+    async function loadLinkedIn() {
+      const el = document.getElementById("linkedin-list");
+      try {
+        const items = await API.apiRequest("/linkedin-internships");
+        el.className = "internship-grid";
+        el.innerHTML = items
+          .map(
+            (item) => `
+          <article class="card internship-card">
+            <span class="badge">LinkedIn Search</span>
+            <h3>${item.title}</h3>
+            <p><strong>${item.company_name}</strong></p>
+            <p>${item.location || "Various locations"}</p>
+            <p style="color:var(--muted)">${item.description || ""}</p>
+            <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="${item.linkedin_url}">
+              View on LinkedIn
+            </a>
+          </article>`
+          )
+          .join("");
+      } catch (err) {
+        el.className = "error-state";
+        el.textContent = err.message;
+      }
+    }
+
+    loadLinkedIn();
+  </script>
+</body>
+</html>

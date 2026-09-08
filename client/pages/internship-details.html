@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internship Details | InternHub</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Auth required");
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (!id) {
+      window.location.href = "internships.html";
+    }
+
+    mountAppShell("internships", "Internship Details", `<div id="detail-root" class="loading-state">Loading...</div>`);
+
+    async function loadDetails() {
+      const item = await API.apiRequest(`/internships/${id}`);
+      const skills = (item.skills || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      document.getElementById("detail-root").innerHTML = `
+        <section class="detail-grid">
+          <article class="card detail-panel">
+            <div class="internship-meta">
+              ${workModeBadge(item.work_mode)}
+              <span class="badge">${item.source}</span>
+              <span class="badge">${item.application_method}</span>
+            </div>
+            <h2>${item.title}</h2>
+            <p><strong>${item.company_name}</strong> · ${item.location || "N/A"}</p>
+            <p>${item.description || "No description provided."}</p>
+            <h3>Required Skills</h3>
+            <div class="chip-list">${skills.map((s) => `<span class="chip">${s}</span>`).join("") || "<span>No skills listed</span>"}</div>
+            <h3>Eligibility</h3>
+            <p>${item.eligibility || "See listing details."}</p>
+          </article>
+          <aside class="card side-panel">
+            <p><strong>Duration:</strong> ${item.duration || "N/A"}</p>
+            <p><strong>Stipend:</strong> ${item.stipend || "N/A"}</p>
+            <p><strong>Deadline:</strong> ${formatDate(item.deadline)}</p>
+            <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem">
+              <button class="btn btn-secondary" id="save-btn">${item.is_saved ? "Saved" : "Save Internship"}</button>
+              <button class="btn btn-primary" id="apply-btn">${item.application_method === "external" ? "Apply on Original Site" : "Apply Now"}</button>
+              <div id="whatsapp-box"></div>
+            </div>
+          </aside>
+        </section>
+      `;
+
+      document.getElementById("save-btn").addEventListener("click", async () => {
+        await API.apiRequest(`/saved-internships/${id}`, { method: "POST" });
+        showToast("Saved to your list", "success");
+      });
+
+      document.getElementById("apply-btn").addEventListener("click", async () => {
+        if (item.application_method === "external") {
+          if (item.application_url) {
+            window.open(item.application_url, "_blank", "noopener");
+          } else {
+            showToast("External URL not available", "error");
+          }
+          return;
+        }
+        try {
+          const data = await API.apiRequest("/applications", {
+            method: "POST",
+            body: JSON.stringify({ internship_id: Number(id) }),
+          });
+          showToast(`Applied! ID: ${data.application.application_code}`, "success");
+          if (data.application.whatsapp?.click_to_chat_url) {
+            document.getElementById("whatsapp-box").innerHTML = `
+              <a class="btn btn-outline" target="_blank" rel="noopener" href="${data.application.whatsapp.click_to_chat_url}">
+                Share on WhatsApp
+              </a>
+            `;
+          }
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    }
+
+    loadDetails().catch((err) => {
+      document.getElementById("detail-root").className = "error-state";
+      document.getElementById("detail-root").textContent = err.message;
+    });
+  </script>
+</body>
+</html>
