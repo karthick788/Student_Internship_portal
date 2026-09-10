@@ -1,26 +1,19 @@
+import uuid
 from datetime import datetime
 from models.db import execute, fetch_all, fetch_one
 
 
-def next_application_code():
-    year = datetime.now().year
-    prefix = f"APP-{year}-"
-    row = fetch_one(
-        "SELECT COUNT(*) AS total FROM applications WHERE application_code LIKE %s",
-        (f"{prefix}%",),
-    )
-    n = (row["total"] if row else 0) + 1
-    return f"{prefix}{n:06d}"
-
-
 def create_application(student_id, internship_id, cover_note=None):
-    code = next_application_code()
     app_id, _ = execute(
         """
         INSERT INTO applications (application_code, student_id, internship_id, status, cover_note)
         VALUES (%s, %s, %s, 'submitted', %s)
         """,
-        (code, student_id, internship_id, cover_note),
+        (f"TEMP-{uuid.uuid4().hex[:8]}", student_id, internship_id, cover_note),
+    )
+    execute(
+        "UPDATE applications SET application_code = %s WHERE id = %s",
+        (f"APP-{datetime.now().year}-{app_id:06d}", app_id),
     )
     return get_application(app_id, student_id)
 
