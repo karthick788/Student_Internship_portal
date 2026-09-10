@@ -35,7 +35,7 @@ def upload_resume(student, file):
         student["id"],
         stored,
         clean_str(original, 255),
-        path,
+        stored,
         file.mimetype or "application/octet-stream",
         os.path.getsize(path),
     )
