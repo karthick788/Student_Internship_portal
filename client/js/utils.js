@@ -1,3 +1,13 @@
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function showToast(message, type = "info") {
   let container = document.querySelector(".toast-container");
   if (!container) {
@@ -46,7 +56,7 @@ function statusBadge(status) {
     rejected: "badge-danger",
     selected: "badge-success",
   };
-  return `<span class="badge ${map[status] || "badge"}">${(status || "").replaceAll("_", " ")}</span>`;
+  return `<span class="badge ${map[status] || "badge"}">${escapeHtml((status || "").replaceAll("_", " "))}</span>`;
 }
 
 function workModeBadge(mode) {
@@ -61,7 +71,7 @@ function renderSidebar(active) {
         <div class="brand-mark">SI</div>
         <div>
           <div>InternHub</div>
-          <small style="color:#94a3b8">${student?.full_name || "Student"}</small>
+          <small style="color:#94a3b8">${escapeHtml(student?.full_name) || "Student"}</small>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -86,7 +96,7 @@ function mountAppShell(active, title, contentHtml) {
         <div class="topbar">
           <div>
             <button class="mobile-toggle" id="menu-toggle" aria-label="Open menu">☰</button>
-            <h1 class="page-title">${title}</h1>
+            <h1 class="page-title">${escapeHtml(title)}</h1>
           </div>
         </div>
         ${contentHtml}
@@ -103,21 +113,22 @@ function mountAppShell(active, title, contentHtml) {
 }
 
 function internshipCard(item, options = {}) {
+  const id = escapeHtml(item.id);
   const savedBtn = options.showUnsave
-    ? `<button class="btn btn-danger btn-sm" data-unsave="${item.id}">Remove</button>`
-    : `<button class="btn btn-secondary btn-sm" data-save="${item.id}">Save</button>`;
+    ? `<button class="btn btn-danger btn-sm" data-unsave="${id}">Remove</button>`
+    : `<button class="btn btn-secondary btn-sm" data-save="${id}">Save</button>`;
   return `
     <article class="card internship-card">
       <div class="internship-meta">
-        ${workModeBadge(item.work_mode)}
-        <span class="badge">${item.application_method || "internal"}</span>
+        ${workModeBadge(escapeHtml(item.work_mode))}
+        <span class="badge">${escapeHtml(item.application_method) || "internal"}</span>
       </div>
-      <h3>${item.title}</h3>
-      <p><strong>${item.company_name}</strong></p>
-      <p>${item.location || "Location not specified"} · ${item.duration || "Duration N/A"}</p>
-      <p style="color:var(--muted);font-size:0.92rem">${(item.description || "").slice(0, 120)}...</p>
+      <h3>${escapeHtml(item.title)}</h3>
+      <p><strong>${escapeHtml(item.company_name)}</strong></p>
+      <p>${escapeHtml(item.location) || "Location not specified"} · ${escapeHtml(item.duration) || "Duration N/A"}</p>
+      <p style="color:var(--muted);font-size:0.92rem">${escapeHtml((item.description || "").slice(0, 120))}...</p>
       <div style="margin-top:auto;display:flex;gap:0.5rem;flex-wrap:wrap">
-        <a class="btn btn-primary btn-sm" href="internship-details.html?id=${item.id}">View Details</a>
+        <a class="btn btn-primary btn-sm" href="internship-details.html?id=${id}">View Details</a>
         ${options.hideSave ? "" : savedBtn}
       </div>
     </article>
@@ -125,6 +136,7 @@ function internshipCard(item, options = {}) {
 }
 
 window.Utils = {
+  escapeHtml,
   showToast,
   requireAuth,
   redirectIfAuthed,
