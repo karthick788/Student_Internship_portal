@@ -5,14 +5,12 @@ function getToken() {
 }
 
 function setSession(token, student) {
-  localStorage.setItem("token", token);
   if (student) {
     localStorage.setItem("student", JSON.stringify(student));
   }
 }
 
 function clearSession() {
-  localStorage.removeItem("token");
   localStorage.removeItem("student");
 }
 
@@ -23,10 +21,6 @@ function getStudent() {
 
 async function apiRequest(path, options = {}) {
   const headers = { ...(options.headers || {}) };
-  const token = getToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   if (!(options.body instanceof FormData) && options.body && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
@@ -35,6 +29,7 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    credentials: "include",
   });
 
   let data = null;
