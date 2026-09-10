@@ -1,11 +1,16 @@
 if (!requireAuth()) throw new Error("Auth required");
 
+let editingEduId = null;
+let lastEducation = [];
+const OPTIONAL_FIELDS = ["phone", "college", "course", "year_of_study", "city", "bio", "date_of_birth"];
+
 mountAppShell(
   "profile",
   "Profile",
   `
   <section class="card profile-section">
     <h2>Personal Information</h2>
+    <div id="completeness" style="margin-bottom:1rem"></div>
     <form id="profile-form" class="form-grid">
       <div class="form-row">
         <div class="form-group"><label>Full Name</label><input name="full_name" required></div>
@@ -18,6 +23,9 @@ mountAppShell(
       <div class="form-row">
         <div class="form-group"><label>Year of Study</label><input name="year_of_study"></div>
         <div class="form-group"><label>City</label><input name="city"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date of Birth</label><input name="date_of_birth" type="date"></div>
       </div>
       <div class="form-group"><label>Bio</label><textarea name="bio"></textarea></div>
       <button class="btn btn-primary" type="submit">Save Profile</button>
@@ -40,7 +48,7 @@ mountAppShell(
         <div class="form-group"><label>Start Year</label><input name="start_year" type="number"></div>
         <div class="form-group"><label>End Year</label><input name="end_year" type="number"></div>
       </div>
-      <button class="btn btn-secondary" type="submit">Add Education</button>
+      <button class="btn btn-secondary" type="submit" id="edu-submit-btn">Add Education</button>
     </form>
   </section>
 
@@ -66,54 +74,80 @@ mountAppShell(
 );
 
 const profileForm = document.getElementById("profile-form");
+const eduForm = document.getElementById("education-form");
+const eduSubmitBtn = document.getElementById("edu-submit-btn");
 
-async function loadProfile() {
-  const profile = await API.apiRequest("/student/profile");
-  Object.keys(profileForm.elements).forEach((name) => {
-    if (profileForm.elements[name] && profile[name] != null) {
-      profileForm.elements[name].value = profile[name] || "";
-    }
-  });
-  renderEducation(profile.education || []);
-  renderSkills(profile.skills || []);
-  const resume = await API.apiRequest("/student/resume");
-  if (resume?.original_name) {
-    document.getElementById("resume-info").textContent =
-      `Latest: ${resume.original_name} (${Math.round(resume.file_size / 1024)} KB)`;
-  }
+// Profile completeness: optional fields filled / 7
+function renderCompleteness(profile) {
+  const filled = OPTIONAL_FIELDS.filter((f) => String(profile[f] || "").trim()).length;
+  const pct = Math.round((filled / 7) * 100);
+  document.getElementById("completeness").innerHTML = `
+    <p class="profile-complete-label">${pct}% profile complete</p>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+  `;
+}
+
+function resetEduForm() {
+  eduForm.reset();
+  editingEduId = null;
+  eduSubmitBtn.textContent = "Add Education";
 }
 
 function renderEducation(items) {
-  document.getElementById("education-list").innerHTML = items.length
+  lastEducation = items;
+  const list = document.getElementById("education-list");
+  list.innerHTML = items.length
     ? items
         .map(
           (e) => `
       <div class="education-row">
         <div>
-          <strong>${e.degree}</strong> · ${e.institution}<br>
-          <small>${e.field_of_study || ""} ${e.start_year || ""}-${e.end_year || ""}</small>
+          <strong>${escapeHtml(e.degree)}</strong> · ${escapeHtml(e.institution)}<br>
+          <small>${escapeHtml(e.field_of_study || "")} ${escapeHtml(e.start_year || "")}-${escapeHtml(e.end_year || "")}</small>
         </div>
-        <button class="btn btn-danger btn-sm" data-delete-edu="${e.id}">Delete</button>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn btn-secondary btn-sm" data-edu-id="${escapeHtml(e.id)}">Edit</button>
+          <button class="btn btn-danger btn-sm" data-delete-edu="${escapeHtml(e.id)}">Delete</button>
+        </div>
       </div>`
         )
         .join("")
     : `<p class="empty-state">No education added yet.</p>`;
 
-  document.querySelectorAll("[data-delete-edu]").forEach((btn) => {
+  list.querySelectorAll("[data-edu-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const e = lastEducation.find((x) => String(x.id) === btn.dataset.eduId);
+      if (!e) return;
+      editingEduId = e.id;
+      ["institution", "degree", "field_of_study", "grade", "start_year", "end_year"].forEach((f) => {
+        eduForm.elements[f].value = e[f] ?? "";
+      });
+      eduSubmitBtn.textContent = "Update";
+    });
+  });
+
+  list.querySelectorAll("[data-delete-edu]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await API.apiRequest(`/student/education/${btn.dataset.deleteEdu}`, { method: "DELETE" });
       showToast("Education removed", "success");
+      resetEduForm();
       loadProfile();
     });
   });
 }
 
 function renderSkills(items) {
-  document.getElementById("skills-list").innerHTML = items.length
-    ? `<div class="chip-list">${items.map((s) => `<span class="chip">${s.name} <button data-delete-skill="${s.id}" style="border:none;background:none;cursor:pointer">×</button></span>`).join("")}</div>`
+  const list = document.getElementById("skills-list");
+  list.innerHTML = items.length
+    ? `<div class="chip-list">${items
+        .map(
+          (s) =>
+            `<span class="chip">${escapeHtml(s.name)} <button data-delete-skill="${escapeHtml(s.id)}" style="border:none;background:none;cursor:pointer">×</button></span>`
+        )
+        .join("")}</div>`
     : `<p class="empty-state">No skills added yet.</p>`;
 
-  document.querySelectorAll("[data-delete-skill]").forEach((btn) => {
+  list.querySelectorAll("[data-delete-skill]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await API.apiRequest(`/student/skills/${btn.dataset.deleteSkill}`, { method: "DELETE" });
       showToast("Skill removed", "success");
@@ -122,19 +156,46 @@ function renderSkills(items) {
   });
 }
 
+function renderResume(resume) {
+  const el = document.getElementById("resume-info");
+  if (!resume?.original_name) {
+    el.textContent = "No resume uploaded yet.";
+    return;
+  }
+  const kb = Math.round((resume.file_size || 0) / 1024);
+  el.innerHTML = `${escapeHtml(resume.original_name)} (${kb} KB)
+    <a class="btn btn-outline btn-sm" href="${API.base}/student/resume/file" download>Download</a>`;
+}
+
+async function loadProfile() {
+  const profile = await API.apiRequest("/student/profile");
+  Object.keys(profileForm.elements).forEach((name) => {
+    if (profileForm.elements[name] && profile[name] != null) {
+      profileForm.elements[name].value = profile[name] || "";
+    }
+  });
+  renderCompleteness(profile);
+  renderEducation(profile.education || []);
+  renderSkills(profile.skills || []);
+  renderResume(await API.apiRequest("/student/resume"));
+}
+
 profileForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = Object.fromEntries(new FormData(profileForm).entries());
   await API.apiRequest("/student/profile", { method: "PUT", body: JSON.stringify(payload) });
   showToast("Profile updated", "success");
+  loadProfile();
 });
 
-document.getElementById("education-form").addEventListener("submit", async (e) => {
+eduForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const payload = Object.fromEntries(new FormData(e.target).entries());
-  await API.apiRequest("/student/education", { method: "POST", body: JSON.stringify(payload) });
-  e.target.reset();
-  showToast("Education added", "success");
+  const payload = Object.fromEntries(new FormData(eduForm).entries());
+  const path = editingEduId ? `/student/education/${editingEduId}` : "/student/education";
+  const method = editingEduId ? "PUT" : "POST";
+  await API.apiRequest(path, { method, body: JSON.stringify(payload) });
+  showToast(editingEduId ? "Education updated" : "Education added", "success");
+  resetEduForm();
   loadProfile();
 });
 
@@ -149,9 +210,9 @@ document.getElementById("skill-form").addEventListener("submit", async (e) => {
 
 document.getElementById("resume-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const formData = new FormData(e.target);
-  await API.apiRequest("/student/resume", { method: "POST", body: formData });
+  await API.apiRequest("/student/resume", { method: "POST", body: new FormData(e.target) });
   showToast("Resume uploaded", "success");
+  e.target.reset();
   loadProfile();
 });
 

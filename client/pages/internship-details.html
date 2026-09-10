@@ -29,24 +29,33 @@
         <section class="detail-grid">
           <article class="card detail-panel">
             <div class="internship-meta">
-              ${workModeBadge(item.work_mode)}
-              <span class="badge">${item.source}</span>
-              <span class="badge">${item.application_method}</span>
+              ${workModeBadge(escapeHtml(item.work_mode))}
+              <span class="badge">${escapeHtml(item.source)}</span>
+              <span class="badge">${escapeHtml(item.application_method)}</span>
             </div>
-            <h2>${item.title}</h2>
-            <p><strong>${item.company_name}</strong> · ${item.location || "N/A"}</p>
-            <p>${item.description || "No description provided."}</p>
+            <h2>${escapeHtml(item.title)}</h2>
+            <p><strong>${escapeHtml(item.company_name)}</strong> · ${escapeHtml(item.location) || "N/A"}</p>
+            <p>${escapeHtml(item.description) || "No description provided."}</p>
             <h3>Required Skills</h3>
-            <div class="chip-list">${skills.map((s) => `<span class="chip">${s}</span>`).join("") || "<span>No skills listed</span>"}</div>
+            <div class="chip-list">${skills.map((s) => `<span class="chip">${escapeHtml(s)}</span>`).join("") || "<span>No skills listed</span>"}</div>
             <h3>Eligibility</h3>
-            <p>${item.eligibility || "See listing details."}</p>
+            <p>${escapeHtml(item.eligibility) || "See listing details."}</p>
           </article>
           <aside class="card side-panel">
-            <p><strong>Duration:</strong> ${item.duration || "N/A"}</p>
-            <p><strong>Stipend:</strong> ${item.stipend || "N/A"}</p>
+            <p><strong>Duration:</strong> ${escapeHtml(item.duration) || "N/A"}</p>
+            <p><strong>Stipend:</strong> ${escapeHtml(item.stipend) || "N/A"}</p>
             <p><strong>Deadline:</strong> ${formatDate(item.deadline)}</p>
             <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem">
               <button class="btn btn-secondary" id="save-btn">${item.is_saved ? "Saved" : "Save Internship"}</button>
+              ${item.application_method !== "external" ? `
+              <div class="form-group" style="margin-top:0.8rem">
+                <label for="cover-note" style="font-weight:600;display:block;margin-bottom:0.4rem">
+                  Cover Note <span style="color:var(--muted);font-weight:400">(optional)</span>
+                </label>
+                <textarea id="cover-note" class="form-group"
+                  style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:10px;font:inherit;min-height:80px;resize:vertical"
+                  placeholder="Tell them why you're a great fit..."></textarea>
+              </div>` : ""}
               <button class="btn btn-primary" id="apply-btn">${item.application_method === "external" ? "Apply on Original Site" : "Apply Now"}</button>
               <div id="whatsapp-box"></div>
             </div>
@@ -71,7 +80,10 @@
         try {
           const data = await API.apiRequest("/applications", {
             method: "POST",
-            body: JSON.stringify({ internship_id: Number(id) }),
+            body: JSON.stringify({
+              internship_id: Number(id),
+              cover_note: document.getElementById("cover-note")?.value?.trim() || null,
+            }),
           });
           showToast(`Applied! ID: ${data.application.application_code}`, "success");
           if (data.application.whatsapp?.click_to_chat_url) {

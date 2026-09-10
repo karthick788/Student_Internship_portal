@@ -16,6 +16,10 @@ class Config:
     DB_USER = os.getenv("DB_USER", "root")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
     DB_NAME = os.getenv("DB_NAME", "internship_management")
+    # Optional SSL CA cert path (required for Aiven; PlanetScale handles SSL automatically)
+    DB_SSL_CA = os.getenv("DB_SSL_CA", "").strip()
+    # Connection pool size — increase for cloud DBs with higher latency
+    DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "10"))
 
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads/resumes")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(5 * 1024 * 1024)))

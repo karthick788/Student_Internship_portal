@@ -1,5 +1,8 @@
 if (!requireAuth()) throw new Error("Auth required");
 
+let currentPage = 1;
+let currentFilters = {};
+
 mountAppShell(
   "internships",
   "Find Internships",
@@ -20,35 +23,45 @@ mountAppShell(
     <div class="form-group"><label>Duration</label><input name="duration"></div>
     <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Apply Filters</button></div>
   </form>
-  <div id="internship-list" class="internship-grid loading-state">Loading internships...</div>
+  <div id="internship-list" class="internship-grid"></div>
+  <div id="pagination"></div>
   `
 );
 
 const listEl = document.getElementById("internship-list");
+const paginationEl = document.getElementById("pagination");
 const filtersForm = document.getElementById("filters");
 
-async function loadInternships(params = {}) {
-  listEl.className = "internship-grid loading-state";
-  listEl.textContent = "Loading internships...";
+async function loadInternships(page = currentPage) {
+  currentPage = page;
+  listEl.className = "internship-grid";
+  listEl.innerHTML = renderSkeleton(6);
+  paginationEl.innerHTML = "";
+
+  const params = { ...currentFilters, page: currentPage };
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+
   try {
-    const items = await API.apiRequest(`/internships${query ? `?${query}` : ""}`);
+    const data = await API.apiRequest(`/internships?${query}`);
+    const items = data.items || [];
     if (!items.length) {
       listEl.className = "empty-state";
       listEl.textContent = "No internships found. Try syncing from dashboard.";
       return;
     }
-    listEl.className = "internship-grid";
     listEl.innerHTML = items.map((item) => internshipCard(item)).join("");
+    paginationEl.innerHTML = renderPagination(data.page, data.pages);
     bindSaveButtons();
+    bindPagination();
   } catch (err) {
     listEl.className = "error-state";
-    listEl.textContent = err.message;
+    listEl.innerHTML = `<p>${escapeHtml(err.message)}</p><button class="btn btn-primary" id="retry-btn">Retry</button>`;
+    document.getElementById("retry-btn")?.addEventListener("click", () => loadInternships(currentPage));
   }
 }
 
 function bindSaveButtons() {
-  document.querySelectorAll("[data-save]").forEach((btn) => {
+  listEl.querySelectorAll("[data-save]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       try {
         await API.apiRequest(`/saved-internships/${btn.dataset.save}`, { method: "POST" });
@@ -60,10 +73,20 @@ function bindSaveButtons() {
   });
 }
 
+function bindPagination() {
+  paginationEl.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      const page = Number(btn.dataset.page);
+      if (page !== currentPage) loadInternships(page);
+    });
+  });
+}
+
 filtersForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const params = Object.fromEntries(new FormData(filtersForm).entries());
-  loadInternships(params);
+  currentFilters = Object.fromEntries(new FormData(filtersForm).entries());
+  loadInternships(1);
 });
 
-loadInternships();
+loadInternships(1);

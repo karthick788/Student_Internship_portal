@@ -36,9 +36,13 @@ function redirectIfAuthed(target = "pages/dashboard.html") {
   }
 }
 
-function logout() {
+async function logout() {
+  try {
+    await fetch(`${API.base}/auth/logout`, { method: "POST", credentials: "include" });
+  } catch (_) {}
   API.clearSession();
-  window.location.href = "../login.html";
+  const isInPages = window.location.pathname.includes("/pages/") || window.location.pathname.includes("/admin/");
+  window.location.href = isInPages ? "../login.html" : "login.html";
 }
 
 function formatDate(value) {
@@ -135,6 +139,29 @@ function internshipCard(item, options = {}) {
   `;
 }
 
+function renderSkeleton(count = 6) {
+  return Array.from({ length: count }, () => `
+    <div class="skeleton-card">
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line medium"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line tall"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+  `).join("");
+}
+
+function renderPagination(currentPage, totalPages, onPageChange) {
+  if (totalPages <= 1) return "";
+  const buttons = [];
+  buttons.push(`<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} data-page="${currentPage - 1}">← Prev</button>`);
+  for (let i = 1; i <= totalPages; i++) {
+    buttons.push(`<button class="page-btn ${i === currentPage ? "active" : ""}" data-page="${i}">${i}</button>`);
+  }
+  buttons.push(`<button class="page-btn" ${currentPage === totalPages ? "disabled" : ""} data-page="${currentPage + 1}">Next →</button>`);
+  return `<div class="pagination">${buttons.join("")}</div>`;
+}
+
 window.Utils = {
   escapeHtml,
   showToast,
@@ -146,4 +173,6 @@ window.Utils = {
   workModeBadge,
   mountAppShell,
   internshipCard,
+  renderSkeleton,
+  renderPagination,
 };

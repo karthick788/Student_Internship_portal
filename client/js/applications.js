@@ -11,36 +11,46 @@ mountAppShell(
         <th>Company</th>
         <th>Location</th>
         <th>Status</th>
+        <th>Cover Note</th>
         <th>Applied On</th>
       </tr>
     </thead>
-    <tbody id="apps-body"><tr><td colspan="6">Loading...</td></tr></tbody>
+    <tbody id="apps-body"><tr><td colspan="7">Loading...</td></tr></tbody>
   </table></div>`
 );
 
+const body = document.getElementById("apps-body");
+
+function coverNotePreview(note) {
+  if (!note || !String(note).trim()) return "—";
+  const text = String(note);
+  return escapeHtml(text.length > 60 ? `${text.slice(0, 60)}…` : text);
+}
+
 async function loadApplications() {
-  const body = document.getElementById("apps-body");
+  body.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
   try {
     const items = await API.apiRequest("/applications");
     if (!items.length) {
-      body.innerHTML = `<tr><td colspan="6">No applications yet. Browse internships to apply.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7">No applications yet. <a href="internships.html">Browse Internships →</a></td></tr>`;
       return;
     }
     body.innerHTML = items
       .map(
         (a) => `
       <tr>
-        <td><strong>${a.application_code}</strong></td>
-        <td>${a.title}</td>
-        <td>${a.company_name}</td>
-        <td>${a.location || "N/A"}</td>
+        <td><strong>${escapeHtml(a.application_code)}</strong></td>
+        <td>${escapeHtml(a.title)}</td>
+        <td>${escapeHtml(a.company_name)}</td>
+        <td>${escapeHtml(a.location) || "N/A"}</td>
         <td>${statusBadge(a.status)}</td>
+        <td>${coverNotePreview(a.cover_note)}</td>
         <td>${formatDate(a.created_at)}</td>
       </tr>`
       )
       .join("");
   } catch (err) {
-    body.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 

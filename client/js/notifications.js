@@ -1,40 +1,63 @@
 if (!requireAuth()) throw new Error("Auth required");
 
-mountAppShell("notifications", "Notifications", `<div id="notifications" class="card loading-state">Loading...</div>`);
+mountAppShell(
+  "notifications",
+  "Notifications",
+  `
+  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+    <button class="btn btn-outline btn-sm" id="mark-all-btn">Mark All Read</button>
+  </div>
+  <div id="notifications-container" class="loading-state">Loading notifications...</div>
+  `
+);
+
+const container = document.getElementById("notifications-container");
 
 async function loadNotifications() {
-  const root = document.getElementById("notifications");
+  container.className = "loading-state";
+  container.textContent = "Loading notifications...";
   try {
     const data = await API.apiRequest("/notifications");
     const items = data.items || [];
     if (!items.length) {
-      root.className = "empty-state";
-      root.textContent = "No notifications yet.";
+      container.className = "empty-state";
+      container.textContent = "No notifications yet.";
       return;
     }
-    root.className = "card";
-    root.innerHTML = items
+    container.className = "card";
+    container.innerHTML = items
       .map(
         (n) => `
-      <div class="notification-item ${n.is_read ? "" : "unread"}" data-id="${n.id}">
-        <strong>${n.title}</strong>
-        <p>${n.message}</p>
+      <div class="notification-item ${n.is_read ? "" : "unread"}">
+        <strong>${escapeHtml(n.title)}</strong>
+        <p>${escapeHtml(n.message)}</p>
         <small>${formatDate(n.created_at)}</small>
-        ${n.is_read ? "" : `<button class="btn btn-sm btn-outline mark-read" data-read="${n.id}">Mark read</button>`}
+        ${n.is_read ? "" : `<button class="btn btn-sm btn-outline mark-read" data-id="${escapeHtml(n.id)}">Mark Read</button>`}
       </div>`
       )
       .join("");
 
-    document.querySelectorAll(".mark-read").forEach((btn) => {
+    container.querySelectorAll(".mark-read").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        await API.apiRequest(`/notifications/${btn.dataset.read}/read`, { method: "PUT" });
+        await API.apiRequest(`/notifications/${btn.dataset.id}/read`, { method: "PUT" });
         loadNotifications();
       });
     });
   } catch (err) {
-    root.className = "error-state";
-    root.textContent = err.message;
+    container.className = "error-state";
+    container.textContent = err.message;
   }
 }
 
+document.getElementById("mark-all-btn").addEventListener("click", async () => {
+  try {
+    await API.apiRequest("/notifications/read-all", { method: "PUT" });
+    showToast("All notifications marked as read", "success");
+    loadNotifications();
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+});
+
 loadNotifications();
+setInterval(loadNotifications, 30000);
