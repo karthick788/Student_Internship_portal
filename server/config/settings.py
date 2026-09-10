@@ -5,9 +5,11 @@ load_dotenv()
 
 
 class Config:
+    FLASK_ENV = os.getenv("FLASK_ENV", "development")
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
     JWT_ACCESS_TOKEN_EXPIRES_HOURS = int(os.getenv("JWT_EXPIRES_HOURS", "24"))
+    JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "false").lower() == "true"
 
     DB_HOST = os.getenv("DB_HOST", "localhost")
     DB_PORT = int(os.getenv("DB_PORT", "3306"))
@@ -25,3 +27,10 @@ class Config:
     WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip()
 
     CLIENT_ORIGIN = os.getenv("CLIENT_ORIGIN", "http://localhost:5173")
+
+
+if Config.FLASK_ENV == "production":
+    if Config.JWT_SECRET_KEY in ("dev-jwt-secret", "change_this_jwt_secret", ""):
+        raise RuntimeError("JWT_SECRET_KEY must be set to a strong value in production")
+    if Config.SECRET_KEY in ("dev-secret", "change_this_secret_key", ""):
+        raise RuntimeError("SECRET_KEY must be set to a strong value in production")
