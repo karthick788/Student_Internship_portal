@@ -52,7 +52,7 @@ def upsert_internship(data):
     return intern_id, "inserted"
 
 
-def list_internships(filters):
+def list_internships(filters, page: int = 1, per_page: int = 20):
     clauses = ["1=1"]
     params = []
     search = (filters.get("search") or "").strip()
@@ -77,8 +77,26 @@ def list_internships(filters):
     if filters.get("stipend"):
         clauses.append("stipend LIKE %s")
         params.append(f"%{filters['stipend']}%")
-    sql = f"SELECT * FROM internships WHERE {' AND '.join(clauses)} ORDER BY updated_at DESC, id DESC"
-    return fetch_all(sql, tuple(params))
+
+    where = " AND ".join(clauses)
+    count_row = fetch_one(f"SELECT COUNT(*) AS total FROM internships WHERE {where}", tuple(params))
+    total = count_row["total"] if count_row else 0
+
+    page = max(1, page)
+    per_page = max(1, per_page)
+    params.extend([per_page, (page - 1) * per_page])
+    sql = (
+        f"SELECT * FROM internships WHERE {where} "
+        "ORDER BY updated_at DESC, id DESC LIMIT %s OFFSET %s"
+    )
+    pages = max(1, (total + per_page - 1) // per_page)
+    return {
+        "items": fetch_all(sql, tuple(params)),
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "per_page": per_page,
+    }
 
 
 def get_internship(internship_id):

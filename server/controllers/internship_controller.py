@@ -3,8 +3,8 @@ from models.saved_model import is_saved
 from services.internship_api_service import sync_internships
 
 
-def search_internships(filters):
-    return list_internships(filters)
+def search_internships(filters, page=1, per_page=20):
+    return list_internships(filters, page, per_page)
 
 
 def internship_details(internship_id, student_id=None):

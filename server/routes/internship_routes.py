@@ -17,7 +17,9 @@ def list_all():
         "duration": request.args.get("duration"),
         "stipend": request.args.get("stipend"),
     }
-    return jsonify(search_internships(filters))
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = min(max(1, int(request.args.get("per_page", 20))), 100)
+    return jsonify(search_internships(filters, page, per_page))
 
 
 @internship_bp.get("/<int:internship_id>")
