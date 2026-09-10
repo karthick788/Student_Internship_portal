@@ -22,3 +22,9 @@ Thumbs.db
 
 # Node (not used, but ignore if created)
 node_modules/
+
+# Planning & dev docs (local only — do not push to GitHub)
+PHASE_PLAN.md
+CURSOR_PROMPTS.md
+PROJECT_END_TO_END_PRODUCT_PLAN.md
+HOW_TO_BUILD.md

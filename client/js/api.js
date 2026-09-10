@@ -48,6 +48,12 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      const isInPages = window.location.pathname.includes("/pages/") || window.location.pathname.includes("/admin/");
+      window.location.href = isInPages ? "../login.html" : "login.html";
+      return;
+    }
     const message = data?.error || data?.message || "Request failed";
     throw new Error(message);
   }
