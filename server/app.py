@@ -1,9 +1,10 @@
 import os
 from datetime import timedelta
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config.settings import Config
+from utils.logger import get_logger
 
 
 def create_app():
@@ -23,6 +24,23 @@ def create_app():
         supports_credentials=True,
     )
     JWTManager(app)
+
+    @app.errorhandler(400)
+    def bad_request(_error):
+        return jsonify({"error": "Bad request", "status": 400}), 400
+
+    @app.errorhandler(401)
+    def unauthorised(_error):
+        return jsonify({"error": "Unauthorised", "status": 401}), 401
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        return jsonify({"error": "Not found", "status": 404}), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(_error):
+        get_logger("app").exception("Unhandled error")
+        return jsonify({"error": "Internal server error", "status": 500}), 500
 
     from routes.auth_routes import auth_bp
     from routes.student_routes import student_bp
@@ -44,11 +62,12 @@ def create_app():
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "service": "student-internship-api"}
+        return {"ok": True, "service": "student-internship-api", "env": Config.FLASK_ENV}
 
     return app
 
 
 if __name__ == "__main__":
     application = create_app()
-    application.run(host="0.0.0.0", port=5000, debug=True)
+    debug = Config.FLASK_ENV == "development"
+    application.run(host="0.0.0.0", port=5000, debug=debug)
