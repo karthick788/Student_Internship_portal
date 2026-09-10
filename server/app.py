@@ -24,6 +24,9 @@ def create_app():
         supports_credentials=True,
     )
     JWTManager(app)
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
 
     @app.errorhandler(400)
     def bad_request(_error):
