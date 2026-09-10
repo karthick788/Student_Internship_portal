@@ -23,6 +23,14 @@ def mark_read(notification_id, student_id):
     return count
 
 
+def mark_all_read(student_id):
+    _, count = execute(
+        "UPDATE notifications SET is_read = 1 WHERE student_id = %s AND is_read = 0",
+        (student_id,),
+    )
+    return count
+
+
 def unread_count(student_id):
     row = fetch_one(
         "SELECT COUNT(*) AS total FROM notifications WHERE student_id = %s AND is_read = 0",
