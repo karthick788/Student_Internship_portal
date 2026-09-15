@@ -77,12 +77,49 @@ def fetch_from_configured_api():
         items = payload
     return [_normalize_generic(item, "configured") for item in items]
 
+def fetch_from_adzuna():
+    if not Config.ADZUNA_APP_ID or not Config.ADZUNA_APP_KEY:
+        return []
+    try:
+        url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
+        params = {
+            "app_id": Config.ADZUNA_APP_ID,
+            "app_key": Config.ADZUNA_APP_KEY,
+            "what": "internship",
+            "results_per_page": 20
+        }
+        response = requests.get(url, params=params, timeout=25)
+        response.raise_for_status()
+        payload = response.json()
+        jobs = payload.get("results") or []
+        mapped = []
+        for job in jobs:
+            company_obj = job.get("company") or {}
+            location_obj = job.get("location") or {}
+            item = {
+                "id": job.get("id"),
+                "title": job.get("title"),
+                "company": company_obj.get("display_name"),
+                "description": job.get("description"),
+                "location": location_obj.get("display_name"),
+                "application_url": job.get("redirect_url")
+            }
+            mapped.append(_normalize_generic(item, "adzuna"))
+        return mapped
+    except Exception as e:
+        print(f"Error fetching from adzuna: {e}")
+        return []
+
 
 def sync_internships():
+    listings = []
     if Config.INTERNSHIP_API_URL:
-        listings = fetch_from_configured_api()
+        listings.extend(fetch_from_configured_api())
     else:
-        listings = fetch_from_remotive()
+        listings.extend(fetch_from_remotive())
+    
+    if Config.ADZUNA_APP_ID and Config.ADZUNA_APP_KEY:
+        listings.extend(fetch_from_adzuna())
 
     inserted = 0
     updated = 0
@@ -93,3 +130,4 @@ def sync_internships():
         else:
             updated += 1
     return {"fetched": len(listings), "inserted": inserted, "updated": updated}
+

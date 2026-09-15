@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InternHub | Student Internship Management</title>
+  <title>InternHub | Find internships, apply, and track them</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <header class="site-header">
+<body class="landing">
+  <header class="site-header" id="top">
     <div class="container inner">
-      <div class="brand">
-        <div class="brand-mark">SI</div>
+      <a class="brand" href="index.html">
+        <div class="brand-mark">IH</div>
         <span>InternHub</span>
-      </div>
-      <nav class="nav-links">
-        <a href="login.html">Login</a>
-        <a class="btn btn-primary" href="register.html">Get Started</a>
+      </a>
+      <button class="mobile-toggle" type="button" id="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+      <nav class="nav-links" id="site-nav">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
+        <a href="login.html">Student login</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
       </nav>
     </div>
   </header>
@@ -24,44 +28,172 @@
     <section class="hero container">
       <div class="hero-grid">
         <div>
-          <span class="badge">Student Internship Platform</span>
-          <h1>Discover internships, apply smarter, track everything in one place.</h1>
+          <span class="badge">Built for students</span>
+          <h1>Your internships, applications, and resume — in one place.</h1>
           <p>
-            InternHub helps students search internships from external APIs, save opportunities,
-            upload resumes, apply with unique application IDs, and get email updates on your applications.
+            Search roles, save the ones you like, apply with a unique application ID,
+            and get email updates when your status changes. No clutter. No guesswork.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="register.html">Create Free Account</a>
-            <a class="btn btn-outline" href="login.html">Student Login</a>
+            <a class="btn btn-primary" href="register.html">Get started free</a>
+            <a class="btn btn-outline" href="login.html">I already have an account</a>
+          </div>
+          <div class="hero-pills">
+            <span class="chip">Resume upload</span>
+            <span class="chip">Application tracking</span>
+            <span class="chip">Email updates</span>
           </div>
         </div>
-        <div class="card" style="padding:1.5rem">
-          <h3>What you can do</h3>
-          <ul>
-            <li>Search and filter internships by location, skills, and work mode</li>
-            <li>Save internships and apply with internal or external flows</li>
-            <li>Upload PDF/DOC resumes and manage your profile</li>
-            <li>Track applications and receive email updates</li>
-            <li>Open LinkedIn internship searches safely (no scraping)</li>
-          </ul>
+
+        <div class="landing-preview card" aria-hidden="true">
+          <div class="landing-preview-bar">
+            <span></span><span></span><span></span>
+            <p>My Applications</p>
+          </div>
+          <div class="landing-preview-row">
+            <div>
+              <strong>Frontend intern</strong>
+              <small>Remote · APP-2026-000142</small>
+            </div>
+            <span class="badge">Submitted</span>
+          </div>
+          <div class="landing-preview-row">
+            <div>
+              <strong>Data analyst intern</strong>
+              <small>Hybrid · APP-2026-000118</small>
+            </div>
+            <span class="badge badge-warning">Under review</span>
+          </div>
+          <div class="landing-preview-row">
+            <div>
+              <strong>Product intern</strong>
+              <small>Onsite · APP-2026-000091</small>
+            </div>
+            <span class="badge badge-success">Shortlisted</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="container feature-grid">
-      <article class="card feature-card">
-        <h3>External API Discovery</h3>
-        <p>Internships are synced from external job APIs into MySQL and served through secure REST endpoints.</p>
+    <section class="container landing-stats" aria-label="Highlights">
+      <article class="card stat-card">
+        <h3>1 ID</h3>
+        <p>Every internal apply gets a unique code</p>
       </article>
-      <article class="card feature-card">
-        <h3>Application Tracking</h3>
-        <p>Every internal application gets a unique ID like APP-2026-000001 and an email confirmation.</p>
+      <article class="card stat-card">
+        <h3>Email</h3>
+        <p>Confirmations and status changes in your inbox</p>
       </article>
-      <article class="card feature-card">
-        <h3>Student-First Dashboard</h3>
-        <p>Manage profile, education, skills, resume, and saved internships from one dashboard.</p>
+      <article class="card stat-card">
+        <h3>Save</h3>
+        <p>Bookmark internships and apply when ready</p>
+      </article>
+      <article class="card stat-card">
+        <h3>Profile</h3>
+        <p>Education, skills, and resume in one profile</p>
       </article>
     </section>
+
+    <section class="container landing-section" id="how">
+      <h2 class="section-title">How it works</h2>
+      <p class="landing-lead">Four steps from sign-up to a tracked application.</p>
+      <div class="landing-steps">
+        <article class="card feature-card">
+          <span class="landing-step">1</span>
+          <h3>Create your account</h3>
+          <p>Register with your college email and complete your student profile.</p>
+        </article>
+        <article class="card feature-card">
+          <span class="landing-step">2</span>
+          <h3>Upload your resume</h3>
+          <p>PDF or Word, up to 5 MB. Keep it current so you can apply in one click.</p>
+        </article>
+        <article class="card feature-card">
+          <span class="landing-step">3</span>
+          <h3>Discover roles</h3>
+          <p>Search and filter internships by location, skills, and work mode.</p>
+        </article>
+        <article class="card feature-card">
+          <span class="landing-step">4</span>
+          <h3>Apply and track</h3>
+          <p>Internal apply or open the company link. Watch status from your dashboard.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container landing-section" id="features">
+      <h2 class="section-title">Everything you need to apply with confidence</h2>
+      <div class="feature-grid landing-features">
+        <article class="card feature-card">
+          <h3>Smart discovery</h3>
+          <p>Browse seed internships and synced listings. Filter by what actually fits you.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>Application IDs</h3>
+          <p>Internal applications get a code like APP-2026-000001 so you can reference them later.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>Email updates</h3>
+          <p>Get a confirmation when you apply and an email when an admin updates your status.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>Saved internships</h3>
+          <p>Keep a shortlist. Come back when your resume or skill list is ready.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>LinkedIn searches</h3>
+          <p>Open official LinkedIn internship searches. No scraping — just useful links.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>Secure by default</h3>
+          <p>Passwords are hashed, sessions use JWT, and resumes are type- and size-checked.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container landing-section" id="faq">
+      <h2 class="section-title">Common questions</h2>
+      <div class="landing-faq">
+        <article class="card feature-card">
+          <h3>Is InternHub free for students?</h3>
+          <p>Yes. Create an account, complete your profile, and start applying.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>What is an internal vs external apply?</h3>
+          <p>Internal apply is tracked inside InternHub with an application ID. External apply opens the original company URL.</p>
+        </article>
+        <article class="card feature-card">
+          <h3>How do I hear about status changes?</h3>
+          <p>Check My Applications after login. Status updates are also sent to your email.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container landing-cta card">
+      <div>
+        <h2>Ready to start applying?</h2>
+        <p>Create a free student account and set up your profile in a few minutes.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="register.html">Create free account</a>
+        <a class="btn btn-outline" href="login.html">Student login</a>
+      </div>
+    </section>
   </main>
+
+  <footer class="landing-footer">
+    <div class="container inner">
+      <p>© <span id="year"></span> InternHub</p>
+      <nav>
+        <a href="login.html">Student login</a>
+        <a href="register.html">Register</a>
+        <a href="admin/login.html">Staff login</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/landing.js"></script>
 </body>
 </html>

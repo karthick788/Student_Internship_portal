@@ -74,7 +74,7 @@ def list_all_applications():
     )
 
 
-ALLOWED_STATUSES = {"submitted", "under_review", "shortlisted", "rejected", "selected"}
+ALLOWED_STATUSES = {"submitted", "under_review", "shortlisted", "rejected", "selected", "student_selected_next_round", "student_rejected", "student_applied"}
 
 
 def update_application_status(app_id, status):

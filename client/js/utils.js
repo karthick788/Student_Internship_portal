@@ -64,8 +64,15 @@ function statusBadge(status) {
     shortlisted: "badge-success",
     rejected: "badge-danger",
     selected: "badge-success",
+    student_selected_next_round: "badge-success",
+    student_rejected: "badge-danger",
+    student_applied: "badge",
   };
-  return `<span class="badge ${map[status] || "badge"}">${escapeHtml((status || "").replaceAll("_", " "))}</span>`;
+  let label = (status || "").replaceAll("_", " ");
+  if (label.startsWith("student ")) {
+    label = label.substring(8) + " (Student)";
+  }
+  return `<span class="badge ${map[status] || "badge"}">${escapeHtml(label)}</span>`;
 }
 
 function workModeBadge(mode) {

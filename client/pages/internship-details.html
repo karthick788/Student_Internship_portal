@@ -57,6 +57,7 @@
                   placeholder="Tell them why you're a great fit..."></textarea>
               </div>` : ""}
               <button class="btn btn-primary" id="apply-btn">${item.application_method === "external" ? "Apply on Original Site" : "Apply Now"}</button>
+              ${item.application_method === "external" ? '<button class="btn btn-secondary" id="internal-ref-btn">Internal Reference (Mark as Applied)</button>' : ""}
               <div id="email-box"></div>
             </div>
           </aside>
@@ -98,6 +99,31 @@
           showToast(err.message, "error");
         }
       });
+      
+      const internalRefBtn = document.getElementById("internal-ref-btn");
+      if (internalRefBtn) {
+          internalRefBtn.addEventListener("click", async () => {
+              try {
+                  const data = await API.apiRequest("/applications", {
+                      method: "POST",
+                      body: JSON.stringify({
+                          internship_id: Number(id),
+                          cover_note: "Internal Reference: Student marked as applied to external internship."
+                      }),
+                  });
+                  
+                  // Now patch the status to student_applied
+                  await API.apiRequest(`/applications/${data.application.id}/status`, {
+                      method: "PATCH",
+                      body: JSON.stringify({ status: "student_applied" })
+                  });
+                  
+                  showToast(`Marked as applied internally! ID: ${data.application.application_code}`, "success");
+              } catch(err) {
+                  showToast(err.message, "error");
+              }
+          });
+      }
     }
 
     loadDetails().catch((err) => {

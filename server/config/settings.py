@@ -31,6 +31,8 @@ class Config:
 
     INTERNSHIP_API_URL = os.getenv("INTERNSHIP_API_URL", "").strip()
     INTERNSHIP_API_KEY = os.getenv("INTERNSHIP_API_KEY", "").strip()
+    ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "").strip()
+    ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "").strip()
 
     EMAILJS_SERVICE_ID = os.getenv("EMAILJS_SERVICE_ID", "").strip()
     EMAILJS_TEMPLATE_ID = os.getenv("EMAILJS_TEMPLATE_ID", "").strip()
