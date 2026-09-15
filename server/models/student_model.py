@@ -15,7 +15,7 @@ def create_student(user_id, full_name, phone=None, college=None):
 def get_student_by_user_id(user_id):
     return fetch_one(
         """
-        SELECT s.*, u.email
+        SELECT s.*, u.email, u.role
         FROM students s
         JOIN users u ON u.id = s.user_id
         WHERE s.user_id = %s
@@ -24,10 +24,19 @@ def get_student_by_user_id(user_id):
     )
 
 
+def ensure_student_for_user(user_id, full_name="Student"):
+    existing = get_student_by_user_id(user_id)
+    if existing:
+        return existing
+    name = (full_name or "Student").strip() or "Student"
+    create_student(user_id, name[:150], None, None)
+    return get_student_by_user_id(user_id)
+
+
 def get_student_by_id(student_id):
     return fetch_one(
         """
-        SELECT s.*, u.email
+        SELECT s.*, u.email, u.role
         FROM students s
         JOIN users u ON u.id = s.user_id
         WHERE s.id = %s

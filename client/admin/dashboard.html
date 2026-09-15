@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | InternHub</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    const STATUSES = ["submitted", "under_review", "shortlisted", "rejected", "selected"];
+    let lastApps = [];
+
+    function adminSidebar(active) {
+      const student = API.getStudent();
+      return `
+        <aside class="sidebar" id="sidebar">
+          <div class="brand">
+            <div class="brand-mark">AD</div>
+            <div>
+              <div>InternHub Admin</div>
+              <small style="color:#94a3b8">${escapeHtml(student?.email) || "Administrator"}</small>
+            </div>
+          </div>
+          <nav class="sidebar-nav">
+            <a href="#" data-tab="applications" class="${active === "applications" ? "active" : ""}">Applications</a>
+            <a href="#" data-tab="students" class="${active === "students" ? "active" : ""}">Students</a>
+            <a href="#" id="logout-link">Logout</a>
+          </nav>
+        </aside>
+      `;
+    }
+
+    function statusSelect(id, current) {
+      const opts = STATUSES.map(
+        (s) => `<option value="${s}" ${s === current ? "selected" : ""}>${s.replaceAll("_", " ")}</option>`
+      ).join("");
+      return `<select class="form-group" data-app-id="${id}" style="margin:0;min-width:10rem">${opts}</select>`;
+    }
+
+    function renderApps(apps) {
+      if (!apps.length) {
+        return `<div class="card" style="padding:1.2rem"><p>No applications yet.</p></div>`;
+      }
+      const rows = apps.map((a) => `
+        <tr>
+          <td>${escapeHtml(a.full_name)}</td>
+          <td>${escapeHtml(a.email)}</td>
+          <td>${escapeHtml(a.college) || "—"}</td>
+          <td>${escapeHtml(a.internship_title)}</td>
+          <td>${escapeHtml(a.company_name)}</td>
+          <td>${statusSelect(a.id, a.status)}</td>
+          <td>${formatDate(a.created_at)}</td>
+        </tr>
+      `).join("");
+      return `
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>College</th>
+                <th>Internship</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Applied Date</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderStudents(students) {
+      if (!students.length) {
+        return `<div class="card" style="padding:1.2rem"><p>No students yet.</p></div>`;
+      }
+      const rows = students.map((s) => `
+        <tr>
+          <td>${escapeHtml(s.full_name)}</td>
+          <td>${escapeHtml(s.email)}</td>
+          <td>${escapeHtml(s.college) || "—"}</td>
+          <td>${s.application_count ?? 0}</td>
+        </tr>
+      `).join("");
+      return `
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>College</th>
+                <th>Applications</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function loadTab(tab) {
+      const title = tab === "students" ? "Students" : "Applications";
+      mountAppShell(tab, title, `<div id="admin-content">${renderSkeleton(3)}</div>`, adminSidebar(tab));
+      document.querySelectorAll("[data-tab]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          loadTab(link.dataset.tab);
+        });
+      });
+      const content = document.getElementById("admin-content");
+      try {
+        if (tab === "students") {
+          const students = await API.apiRequest("/admin/students");
+          content.innerHTML = renderStudents(students || []);
+          return;
+        }
+        const apps = await API.apiRequest("/admin/applications");
+        lastApps = apps || [];
+        content.innerHTML = renderApps(lastApps);
+        content.querySelectorAll("select[data-app-id]").forEach((select) => {
+          select.addEventListener("change", async () => {
+            const appId = select.dataset.appId;
+            const status = select.value;
+            try {
+              await API.apiRequest(`/admin/applications/${appId}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({ status }),
+              });
+              showToast("Status updated", "success");
+            } catch (err) {
+              showToast(err.message, "error");
+            }
+          });
+        });
+      } catch (err) {
+        content.innerHTML = `<div class="card" style="padding:1.2rem"><p>${escapeHtml(err.message)}</p></div>`;
+        showToast(err.message, "error");
+      }
+    }
+
+    (async () => {
+      if (!API.isAuthed()) {
+        window.location.href = "login.html";
+        return;
+      }
+      try {
+        const me = await API.apiRequest("/auth/me");
+        const role = me?.user?.role || me?.student?.role;
+        if (role !== "admin") {
+          API.clearSession();
+          showToast("Not authorised as admin", "error");
+          window.location.href = "login.html";
+          return;
+        }
+        if (me.student) API.setSession(API.getToken(), me.student);
+        await loadTab("applications");
+      } catch (err) {
+        API.clearSession();
+        window.location.href = "login.html";
+      }
+    })();
+  </script>
+</body>
+</html>

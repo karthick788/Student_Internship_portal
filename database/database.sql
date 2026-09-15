@@ -7,8 +7,11 @@ USE internship_management;
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  role ENUM('student') NOT NULL DEFAULT 'student',
+  password_hash VARCHAR(255) NULL,
+  google_id VARCHAR(64) NULL UNIQUE,
+  auth_provider ENUM('password', 'google') NOT NULL DEFAULT 'password',
+  last_login_at TIMESTAMP NULL,
+  role ENUM('student', 'admin') NOT NULL DEFAULT 'student',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,8 +64,9 @@ CREATE TABLE IF NOT EXISTS resumes (
   stored_name VARCHAR(255) NOT NULL,
   original_name VARCHAR(255) NOT NULL,
   file_path VARCHAR(500) NOT NULL,
-  mime_type VARCHAR(120) NOT NULL,
-  file_size INT NOT NULL,
+  mime_type VARCHAR(100),
+  file_size INT,
+  gridfs_file_id VARCHAR(24),
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_resumes_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );

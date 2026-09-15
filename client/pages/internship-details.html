@@ -57,7 +57,7 @@
                   placeholder="Tell them why you're a great fit..."></textarea>
               </div>` : ""}
               <button class="btn btn-primary" id="apply-btn">${item.application_method === "external" ? "Apply on Original Site" : "Apply Now"}</button>
-              <div id="whatsapp-box"></div>
+              <div id="email-box"></div>
             </div>
           </aside>
         </section>
@@ -86,12 +86,13 @@
             }),
           });
           showToast(`Applied! ID: ${data.application.application_code}`, "success");
-          if (data.application.whatsapp?.click_to_chat_url) {
-            document.getElementById("whatsapp-box").innerHTML = `
-              <a class="btn btn-outline" target="_blank" rel="noopener" href="${data.application.whatsapp.click_to_chat_url}">
-                Share on WhatsApp
-              </a>
-            `;
+          const mail = data.application.email || {};
+          const box = document.getElementById("email-box");
+          if (mail.sent) {
+            showToast(`Confirmation email sent to ${mail.to || "your email"}`, "success");
+            box.innerHTML = `<p style="color:var(--muted);font-size:0.9rem">A confirmation email was sent to ${escapeHtml(mail.to)}.</p>`;
+          } else {
+            showToast("Application saved. Email could not be sent yet.", "info");
           }
         } catch (err) {
           showToast(err.message, "error");

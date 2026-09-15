@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config.settings import Config
 from utils.logger import get_logger
+from utils.rate_limit import limiter
 
 
 def create_app():
@@ -12,6 +13,12 @@ def create_app():
     app.config["SECRET_KEY"] = Config.SECRET_KEY
     app.config["JWT_SECRET_KEY"] = Config.JWT_SECRET_KEY
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=Config.JWT_ACCESS_TOKEN_EXPIRES_HOURS)
+    app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
+    app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+    app.config["JWT_COOKIE_SECURE"] = Config.JWT_COOKIE_SECURE
     app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
 
     upload_dir = os.path.join(os.path.dirname(__file__), Config.UPLOAD_FOLDER)
@@ -20,13 +27,19 @@ def create_app():
 
     CORS(
         app,
-        resources={r"/api/*": {"origins": [Config.CLIENT_ORIGIN, "http://127.0.0.1:5173"]}},
+        resources={r"/api/*": {"origins": Config.CLIENT_ORIGINS}},
         supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=["Content-Type"],
     )
     JWTManager(app)
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
+    limiter.init_app(app)
+
+    from models.user_model import ensure_user_auth_columns
+    try:
+        ensure_user_auth_columns()
+    except Exception:
+        get_logger("app").exception("Could not ensure user auth columns")
 
     @app.errorhandler(400)
     def bad_request(_error):
@@ -53,6 +66,7 @@ def create_app():
     from routes.notification_routes import notification_bp
     from routes.resume_routes import resume_bp
     from routes.linkedin_routes import linkedin_bp
+    from routes.admin_routes import admin_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(student_bp, url_prefix="/api/student")
@@ -62,6 +76,7 @@ def create_app():
     app.register_blueprint(notification_bp, url_prefix="/api/notifications")
     app.register_blueprint(resume_bp, url_prefix="/api/student")
     app.register_blueprint(linkedin_bp, url_prefix="/api/linkedin-internships")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
     @app.get("/api/health")
     def health():

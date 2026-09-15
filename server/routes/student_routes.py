@@ -5,7 +5,6 @@ from models.application_model import count_applications
 from models.internship_model import count_internships
 from models.saved_model import count_saved
 from models.resume_model import latest_resume
-from services.notification_service import get_student_notifications
 
 student_bp = Blueprint("student", __name__)
 
@@ -13,13 +12,11 @@ student_bp = Blueprint("student", __name__)
 @student_bp.get("/dashboard")
 @student_required
 def dashboard(student):
-    notifs = get_student_notifications(student["id"])
     return jsonify(
         {
             "internships": count_internships(),
             "applications": count_applications(student["id"]),
             "saved": count_saved(student["id"]),
-            "notifications_unread": notifs["unread"],
             "has_resume": bool(latest_resume(student["id"])),
         }
     )
@@ -35,7 +32,10 @@ def profile(student):
 @student_required
 def update_profile(student):
     data = request.get_json(silent=True) or {}
-    return jsonify(sc.save_profile(student, data))
+    profile, error = sc.save_profile(student, data)
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify(profile)
 
 
 @student_bp.get("/education")

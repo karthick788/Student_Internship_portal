@@ -23,7 +23,7 @@ function showToast(message, type = "info") {
 }
 
 function requireAuth() {
-  if (!API.getToken()) {
+  if (!API.isAuthed()) {
     window.location.href = "../login.html";
     return false;
   }
@@ -31,7 +31,7 @@ function requireAuth() {
 }
 
 function redirectIfAuthed(target = "pages/dashboard.html") {
-  if (API.getToken()) {
+  if (API.isAuthed()) {
     window.location.href = target;
   }
 }
@@ -41,7 +41,12 @@ async function logout() {
     await fetch(`${API.base}/auth/logout`, { method: "POST", credentials: "include" });
   } catch (_) {}
   API.clearSession();
-  const isInPages = window.location.pathname.includes("/pages/") || window.location.pathname.includes("/admin/");
+  const path = window.location.pathname;
+  if (path.includes("/admin/")) {
+    window.location.href = "login.html";
+    return;
+  }
+  const isInPages = path.includes("/pages/");
   window.location.href = isInPages ? "../login.html" : "login.html";
 }
 
@@ -84,7 +89,6 @@ function renderSidebar(active) {
         <a href="internships.html" class="${active === "internships" ? "active" : ""}">Find Internships</a>
         <a href="saved-internships.html" class="${active === "saved" ? "active" : ""}">Saved</a>
         <a href="applications.html" class="${active === "applications" ? "active" : ""}">My Applications</a>
-        <a href="notifications.html" class="${active === "notifications" ? "active" : ""}">Notifications</a>
         <a href="linkedin-internships.html" class="${active === "linkedin" ? "active" : ""}">LinkedIn</a>
         <a href="#" id="logout-link">Logout</a>
       </nav>
@@ -92,10 +96,10 @@ function renderSidebar(active) {
   `;
 }
 
-function mountAppShell(active, title, contentHtml) {
+function mountAppShell(active, title, contentHtml, sidebarHtml) {
   document.body.innerHTML = `
     <div class="app-shell">
-      ${renderSidebar(active)}
+      ${sidebarHtml || renderSidebar(active)}
       <main class="main-content">
         <div class="topbar">
           <div>
@@ -162,6 +166,108 @@ function renderPagination(currentPage, totalPages, onPageChange) {
   return `<div class="pagination">${buttons.join("")}</div>`;
 }
 
+function hideBusy() {
+  document.getElementById("app-busy")?.classList.add("hidden");
+}
+
+function showBusy(text = "Please wait...") {
+  let el = document.getElementById("app-busy");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "app-busy";
+    el.className = "app-busy";
+    el.innerHTML = `<div class="app-busy-card"><div class="spinner"></div><p id="app-busy-text"></p></div>`;
+    document.body.appendChild(el);
+  }
+  const label = document.getElementById("app-busy-text");
+  if (label) label.textContent = text;
+  el.classList.remove("hidden");
+}
+
+async function withBusy(button, label, fn) {
+  const original = button ? button.textContent : "";
+  if (button) {
+    button.disabled = true;
+    button.textContent = label;
+  }
+  showBusy(label);
+  try {
+    return await fn();
+  } finally {
+    hideBusy();
+    if (button) {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+}
+
+function setFieldError(input, message) {
+  const group = input.closest(".form-group") || input.parentElement;
+  group.classList.toggle("has-error", !!message);
+  let hint = group.querySelector(".field-error");
+  if (!hint) {
+    hint = document.createElement("small");
+    hint.className = "field-error";
+    group.appendChild(hint);
+  }
+  hint.textContent = message || "";
+}
+
+function clearFormErrors(form) {
+  form.querySelectorAll(".field-error").forEach((el) => {
+    el.textContent = "";
+  });
+  form.querySelectorAll(".has-error").forEach((el) => el.classList.remove("has-error"));
+}
+
+function validateRegisterForm(form) {
+  clearFormErrors(form);
+  let ok = true;
+  const name = form.full_name.value.trim();
+  if (name.length < 2 || !/^[A-Za-z][A-Za-z .'-]{1,79}$/.test(name)) {
+    setFieldError(form.full_name, "Use your real name (letters only, min 2 characters).");
+    ok = false;
+  }
+  const email = form.email.value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setFieldError(form.email, "Enter a valid email address.");
+    ok = false;
+  }
+  const phone = form.phone.value.trim();
+  if (phone) {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10 || digits.length > 15) {
+      setFieldError(form.phone, "Phone must have 10–15 digits.");
+      ok = false;
+    }
+  }
+  const password = form.password.value;
+  if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password)) {
+    setFieldError(form.password, "Min 8 characters, with at least one letter and one number.");
+    ok = false;
+  }
+  if (form.confirm_password && form.confirm_password.value !== password) {
+    setFieldError(form.confirm_password, "Passwords do not match.");
+    ok = false;
+  }
+  return ok;
+}
+
+function validateLoginForm(form) {
+  clearFormErrors(form);
+  let ok = true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.value.trim())) {
+    setFieldError(form.email, "Enter a valid email address.");
+    ok = false;
+  }
+  if (!form.password.value) {
+    setFieldError(form.password, "Password is required.");
+    ok = false;
+  }
+  return ok;
+}
+
 window.Utils = {
   escapeHtml,
   showToast,
@@ -175,4 +281,9 @@ window.Utils = {
   internshipCard,
   renderSkeleton,
   renderPagination,
+  showBusy,
+  hideBusy,
+  withBusy,
+  validateRegisterForm,
+  validateLoginForm,
 };

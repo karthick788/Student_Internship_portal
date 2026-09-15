@@ -64,7 +64,9 @@ function bindSaveButtons() {
   listEl.querySelectorAll("[data-save]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       try {
-        await API.apiRequest(`/saved-internships/${btn.dataset.save}`, { method: "POST" });
+        await withBusy(btn, "Saving...", async () => {
+          await API.apiRequest(`/saved-internships/${btn.dataset.save}`, { method: "POST" });
+        });
         showToast("Internship saved", "success");
       } catch (err) {
         showToast(err.message, "error");

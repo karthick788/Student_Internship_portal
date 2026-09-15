@@ -28,3 +28,6 @@ PHASE_PLAN.md
 CURSOR_PROMPTS.md
 PROJECT_END_TO_END_PRODUCT_PLAN.md
 HOW_TO_BUILD.md
+.google_oauth.json
+*client_secret*.json
+*.apps.googleusercontent.com.json

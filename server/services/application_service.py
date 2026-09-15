@@ -1,7 +1,7 @@
 from models.application_model import create_application, get_existing_application
 from models.internship_model import get_internship
-from models.notification_model import create_notification
-from services.whatsapp_service import build_whatsapp_payload
+from models.student_model import get_student_by_id
+from services.email_service import send_application_email
 
 
 def apply_to_internship(student, internship_id, cover_note=None):
@@ -17,10 +17,6 @@ def apply_to_internship(student, internship_id, cover_note=None):
         return existing, "You have already applied for this internship", 409
 
     application = create_application(student["id"], internship_id, cover_note)
-    create_notification(
-        student["id"],
-        "Application submitted",
-        f"Your application {application['application_code']} for {internship['title']} was submitted.",
-    )
-    whatsapp = build_whatsapp_payload(student, internship, application["application_code"])
-    return {**application, "whatsapp": whatsapp}, "Application submitted", 201
+    fresh = get_student_by_id(student["id"]) or student
+    email = send_application_email(fresh, internship, application["application_code"])
+    return {**application, "email": email}, "Application submitted", 201

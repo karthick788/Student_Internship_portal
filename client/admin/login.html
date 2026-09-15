@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | InternHub</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body class="auth-page">
+  <div class="card auth-card">
+    <h1>Admin Login</h1>
+    <p>Sign in with an administrator account to review applications.</p>
+    <form id="admin-login-form" class="form-grid" novalidate>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required placeholder="admin@internhub.local" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required minlength="8" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" type="submit">Login</button>
+    </form>
+    <p class="auth-footer"><a href="../login.html">← Student Login</a></p>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("admin-login-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        if (!validateLoginForm(form)) return;
+        const btn = form.querySelector("button[type='submit']");
+        try {
+          await withBusy(btn, "Signing in...", async () => {
+            const data = await API.apiRequest("/auth/login", {
+              method: "POST",
+              body: JSON.stringify({
+                email: form.email.value.trim(),
+                password: form.password.value,
+              }),
+            });
+            if (!data?.token) throw new Error("Login failed. Restart the Flask server.");
+            API.setSession(data.token, data.student);
+            const role = data.student?.role || data.user?.role;
+            if (role !== "admin") {
+              API.clearSession();
+              throw new Error("Not authorised as admin");
+            }
+          });
+          showToast("Welcome, admin", "success");
+          window.location.href = "dashboard.html";
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

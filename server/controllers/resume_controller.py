@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 from models.resume_model import latest_resume, save_resume
 from utils.validators import clean_str
+from config.mongodb import get_gridfs
 
 ALLOWED_EXTENSIONS = {"pdf", "doc", "docx"}
 ALLOWED_MIMES = {
@@ -27,20 +28,35 @@ def upload_resume(student, file):
     original = secure_filename(file.filename)
     ext = original.rsplit(".", 1)[-1].lower()
     stored = f"{student['id']}_{uuid.uuid4().hex}.{ext}"
-    folder = current_app.config["UPLOAD_FOLDER"]
-    path = os.path.join(folder, stored)
-    file.save(path)
+
+    # Read the file data
+    file_bytes = file.read()
+    file_size = len(file_bytes)
+    file_mimetype = file.mimetype or "application/octet-stream"
+
+    try:
+        fs = get_gridfs()
+        gridfs_id = fs.put(
+            file_bytes,
+            filename=original,
+            content_type=file_mimetype,
+            student_id=student["id"],
+        )
+    except Exception:
+        return None, "Resume storage is unavailable. Check MongoDB (MONGO_URI).", 503
 
     resume_id = save_resume(
         student["id"],
         stored,
         clean_str(original, 255),
-        stored,
-        file.mimetype or "application/octet-stream",
-        os.path.getsize(path),
+        "gridfs",  # Set file_path to 'gridfs' as a placeholder
+        file_mimetype,
+        file_size,
+        str(gridfs_id)
     )
     return {"id": resume_id, **latest_resume(student["id"])}, "Resume uploaded", 201
 
 
 def get_resume(student):
     return latest_resume(student["id"])
+

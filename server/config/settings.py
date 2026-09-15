@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+_SERVER_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_SERVER_DIR, ".env"), override=True)
 
 
 class Config:
@@ -24,13 +25,36 @@ class Config:
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads/resumes")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(5 * 1024 * 1024)))
 
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    MONGO_URI = os.getenv("MONGO_URI", "")
+    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "internhub")
+
     INTERNSHIP_API_URL = os.getenv("INTERNSHIP_API_URL", "").strip()
     INTERNSHIP_API_KEY = os.getenv("INTERNSHIP_API_KEY", "").strip()
 
-    WHATSAPP_API_TOKEN = os.getenv("WHATSAPP_API_TOKEN", "").strip()
-    WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip()
+    EMAILJS_SERVICE_ID = os.getenv("EMAILJS_SERVICE_ID", "").strip()
+    EMAILJS_TEMPLATE_ID = os.getenv("EMAILJS_TEMPLATE_ID", "").strip()
+    EMAILJS_PUBLIC_KEY = os.getenv("EMAILJS_PUBLIC_KEY", "").strip()
+    EMAILJS_PRIVATE_KEY = os.getenv("EMAILJS_PRIVATE_KEY", "").strip()  # EmailJS API private key
 
     CLIENT_ORIGIN = os.getenv("CLIENT_ORIGIN", "http://localhost:5173")
+    CLIENT_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            "CLIENT_ORIGINS",
+            ",".join(
+                [
+                    CLIENT_ORIGIN,
+                    "http://127.0.0.1:5173",
+                    "http://localhost:5500",
+                    "http://127.0.0.1:5500",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                ]
+            ),
+        ).split(",")
+        if origin.strip()
+    ]
 
 
 if Config.FLASK_ENV == "production":

@@ -23,7 +23,7 @@ const bannerEl = document.getElementById("resume-banner");
 const syncBtn = document.getElementById("sync-btn");
 
 async function loadDashboard() {
-  statsEl.innerHTML = renderSkeleton(4);
+  statsEl.innerHTML = renderSkeleton(3);
   bannerEl.innerHTML = "";
   try {
     const stats = await API.apiRequest("/student/dashboard");
@@ -31,7 +31,6 @@ async function loadDashboard() {
       <article class="card stat-card"><h3>${stats.internships}</h3><p>🏢 Available Internships</p></article>
       <article class="card stat-card"><h3>${stats.applications}</h3><p>📝 My Applications</p></article>
       <article class="card stat-card"><h3>${stats.saved}</h3><p>🔖 Saved</p></article>
-      <article class="card stat-card"><h3>${stats.notifications_unread}</h3><p>🔔 Unread Notifications</p></article>
     `;
     if (!stats.has_resume) {
       bannerEl.innerHTML =
@@ -43,17 +42,14 @@ async function loadDashboard() {
 }
 
 syncBtn.addEventListener("click", async () => {
-  syncBtn.disabled = true;
-  syncBtn.textContent = "Syncing...";
   try {
-    const result = await API.apiRequest("/internships/sync", { method: "POST" });
-    showToast(`Synced ${result.fetched} listings (${result.inserted} new)`, "success");
-    loadDashboard();
+    await withBusy(syncBtn, "Syncing internships...", async () => {
+      const result = await API.apiRequest("/internships/sync", { method: "POST" });
+      showToast(`Synced ${result.fetched} listings (${result.inserted} new)`, "success");
+      await loadDashboard();
+    });
   } catch (err) {
     showToast(err.message, "error");
-  } finally {
-    syncBtn.disabled = false;
-    syncBtn.textContent = "Sync External Internships";
   }
 });
 

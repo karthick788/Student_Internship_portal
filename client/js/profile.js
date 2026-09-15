@@ -14,7 +14,7 @@ mountAppShell(
     <form id="profile-form" class="form-grid">
       <div class="form-row">
         <div class="form-group"><label>Full Name</label><input name="full_name" required></div>
-        <div class="form-group"><label>Phone</label><input name="phone"></div>
+        <div class="form-group"><label>WhatsApp / Phone</label><input name="phone" type="tel" placeholder="10-digit mobile number" autocomplete="tel"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>College</label><input name="college"></div>
@@ -164,7 +164,26 @@ function renderResume(resume) {
   }
   const kb = Math.round((resume.file_size || 0) / 1024);
   el.innerHTML = `${escapeHtml(resume.original_name)} (${kb} KB)
-    <a class="btn btn-outline btn-sm" href="${API.base}/student/resume/file" download>Download</a>`;
+    <button type="button" class="btn btn-outline btn-sm" id="resume-download-btn">Download</button>`;
+  document.getElementById("resume-download-btn")?.addEventListener("click", async () => {
+    try {
+      const token = API.getToken();
+      const res = await fetch(`${API.base}/student/resume/file`, {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = resume.original_name || "resume";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  });
 }
 
 async function loadProfile() {
@@ -183,37 +202,66 @@ async function loadProfile() {
 profileForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = Object.fromEntries(new FormData(profileForm).entries());
-  await API.apiRequest("/student/profile", { method: "PUT", body: JSON.stringify(payload) });
-  showToast("Profile updated", "success");
-  loadProfile();
+  const btn = profileForm.querySelector("button[type='submit']");
+  try {
+    await withBusy(btn, "Saving profile...", async () => {
+      await API.apiRequest("/student/profile", { method: "PUT", body: JSON.stringify(payload) });
+      await loadProfile();
+    });
+    showToast("Profile updated", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 });
 
 eduForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const wasEditing = Boolean(editingEduId);
   const payload = Object.fromEntries(new FormData(eduForm).entries());
-  const path = editingEduId ? `/student/education/${editingEduId}` : "/student/education";
-  const method = editingEduId ? "PUT" : "POST";
-  await API.apiRequest(path, { method, body: JSON.stringify(payload) });
-  showToast(editingEduId ? "Education updated" : "Education added", "success");
-  resetEduForm();
-  loadProfile();
+  const path = wasEditing ? `/student/education/${editingEduId}` : "/student/education";
+  const method = wasEditing ? "PUT" : "POST";
+  const btn = eduSubmitBtn;
+  try {
+    await withBusy(btn, wasEditing ? "Updating..." : "Adding...", async () => {
+      await API.apiRequest(path, { method, body: JSON.stringify(payload) });
+      await loadProfile();
+    });
+    resetEduForm();
+    showToast(wasEditing ? "Education updated" : "Education added", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 });
 
 document.getElementById("skill-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = Object.fromEntries(new FormData(e.target).entries());
-  await API.apiRequest("/student/skills", { method: "POST", body: JSON.stringify(payload) });
-  e.target.reset();
-  showToast("Skill added", "success");
-  loadProfile();
+  const btn = e.target.querySelector("button[type='submit']");
+  try {
+    await withBusy(btn, "Adding skill...", async () => {
+      await API.apiRequest("/student/skills", { method: "POST", body: JSON.stringify(payload) });
+      e.target.reset();
+      await loadProfile();
+    });
+    showToast("Skill added", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 });
 
 document.getElementById("resume-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  await API.apiRequest("/student/resume", { method: "POST", body: new FormData(e.target) });
-  showToast("Resume uploaded", "success");
-  e.target.reset();
-  loadProfile();
+  const btn = e.target.querySelector("button[type='submit']");
+  try {
+    await withBusy(btn, "Uploading resume...", async () => {
+      await API.apiRequest("/student/resume", { method: "POST", body: new FormData(e.target) });
+      e.target.reset();
+      await loadProfile();
+    });
+    showToast("Resume uploaded", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 });
 
 loadProfile().catch((err) => showToast(err.message, "error"));

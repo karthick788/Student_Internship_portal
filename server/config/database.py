@@ -24,19 +24,21 @@ def _build_pool_kwargs() -> dict:
         charset="utf8mb4",
         collation="utf8mb4_unicode_ci",
         autocommit=False,
-        connection_timeout=10,
+        connection_timeout=20,
     )
 
     is_local = Config.DB_HOST in ("localhost", "127.0.0.1", "::1")
+    is_aiven = "aivencloud.com" in (Config.DB_HOST or "") or "aiven" in (Config.DB_HOST or "")
 
     if Config.DB_SSL_CA:
-        # Aiven: CA cert path is relative to the server/ directory
         server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         ca_path = os.path.join(server_dir, Config.DB_SSL_CA)
+        if not os.path.isfile(ca_path):
+            ca_path = Config.DB_SSL_CA
         kwargs["ssl_ca"] = ca_path
         kwargs["ssl_verify_cert"] = True
-    elif not is_local:
-        # Other cloud hosts without explicit CA — still enable SSL (no cert verification)
+        kwargs["ssl_disabled"] = False
+    elif is_aiven or not is_local:
         kwargs["ssl_disabled"] = False
 
     return kwargs

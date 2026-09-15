@@ -56,3 +56,38 @@ def count_applications(student_id):
         (student_id,),
     )
     return row["total"] if row else 0
+
+
+def list_all_applications():
+    return fetch_all(
+        """
+        SELECT a.*,
+               s.full_name, s.college, s.phone,
+               u.email,
+               i.title AS internship_title, i.company_name, i.location, i.work_mode
+        FROM applications a
+        JOIN students s ON s.id = a.student_id
+        JOIN users u ON u.id = s.user_id
+        JOIN internships i ON i.id = a.internship_id
+        ORDER BY a.created_at DESC
+        """
+    )
+
+
+ALLOWED_STATUSES = {"submitted", "under_review", "shortlisted", "rejected", "selected"}
+
+
+def update_application_status(app_id, status):
+    if status not in ALLOWED_STATUSES:
+        return None
+    execute(
+        "UPDATE applications SET status = %s WHERE id = %s",
+        (status, app_id),
+    )
+    return fetch_one(
+        "SELECT a.*, s.id AS student_id, i.title FROM applications a "
+        "JOIN students s ON s.id = a.student_id "
+        "JOIN internships i ON i.id = a.internship_id "
+        "WHERE a.id = %s",
+        (app_id,),
+    )

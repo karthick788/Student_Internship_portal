@@ -12,12 +12,13 @@ def db_cursor(commit=False):
         yield cursor
         if commit:
             conn.commit()
-    except Error:
+    except Exception:
         conn.rollback()
         raise
     finally:
         cursor.close()
         conn.close()
+
 
 
 def fetch_one(query, params=None):

@@ -10,7 +10,7 @@ from models.student_model import (
     update_education,
     update_student,
 )
-from utils.validators import require_fields
+from utils.validators import is_valid_full_name, is_valid_phone, require_fields
 
 
 def get_profile(student):
@@ -22,8 +22,13 @@ def get_profile(student):
 
 
 def save_profile(student, data):
-    update_student(student["id"], data or {})
-    return get_profile(get_student_by_user_id(student["user_id"]))
+    data = data or {}
+    if data.get("full_name") and not is_valid_full_name(data.get("full_name")):
+        return None, "Enter a valid full name (letters only, at least 2 characters)"
+    if "phone" in data and not is_valid_phone(data.get("phone")):
+        return None, "Enter a valid phone number (10–15 digits)"
+    update_student(student["id"], data)
+    return get_profile(get_student_by_user_id(student["user_id"])), None
 
 
 def create_education(student, data):

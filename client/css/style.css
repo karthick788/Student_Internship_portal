@@ -596,4 +596,65 @@ th {
   flex-wrap: wrap;
 }
 
-.banner p { margin: 0; color: var(--primary); font-weight: 500; }
+.btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+  pointer-events: none;
+}
+
+.app-busy {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+}
+
+.app-busy.hidden {
+  display: none;
+}
+
+.app-busy-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.4rem 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: var(--shadow);
+  min-width: 240px;
+}
+
+.app-busy-card p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #dbeafe;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.field-error {
+  display: block;
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  min-height: 0;
+}
+
+.form-group.has-error input,
+.form-group.has-error textarea,
+.form-group.has-error select {
+  border-color: var(--danger);
+}

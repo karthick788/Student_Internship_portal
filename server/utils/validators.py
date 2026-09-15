@@ -2,10 +2,28 @@ import re
 from urllib.parse import urlparse
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+NAME_RE = re.compile(r"^[A-Za-z][A-Za-z .'-]{1,79}$")
+PHONE_RE = re.compile(r"^[0-9+\-() ]{10,20}$")
+PASSWORD_RE = re.compile(r"^(?=.*[A-Za-z])(?=.*\d).{8,}$")
 
 
 def is_valid_email(value):
     return bool(value and EMAIL_RE.match(value.strip()))
+
+
+def is_valid_full_name(value):
+    return bool(value and NAME_RE.match(value.strip()))
+
+
+def is_valid_phone(value):
+    if not value:
+        return True
+    digits = re.sub(r"\D", "", value)
+    return 10 <= len(digits) <= 15 and bool(PHONE_RE.match(value.strip()))
+
+
+def is_strong_password(value):
+    return bool(value and PASSWORD_RE.match(value))
 
 
 def require_fields(data, fields):
